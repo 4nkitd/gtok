@@ -22,7 +22,7 @@ jobs:
           with:
             node-version: '14'
         - name: Install Dependencies
-          run: npm i 
+          run: npm ci 
         
         - name: Build React App
           run: npm run build
