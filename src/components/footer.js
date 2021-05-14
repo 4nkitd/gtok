@@ -2,7 +2,7 @@
 function Footer() {
     return (
         <footer>
-            <div class="footer">
+            <div ClassName="footer footer-bottom bg-dark">
                 <p>&copy; 2021</p>
             </div>
         </footer>

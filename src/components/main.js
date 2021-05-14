@@ -9,23 +9,23 @@ function Main() {
 
             <div ClassName="card">
                 <div id="login-container">
-                    <div class="profile-img"></div>
+                    <div ClassName="profile-img"></div>
                     <h1>User</h1>
                     <h2>my-repo</h2>
-                    <div class="description">
+                    <div ClassName="description">
                         this is a dummy description of the repo.
                     </div>
                     
-                    <div class="social">
+                    <div ClassName="social">
                         <a>GitHub</a>
                     </div>
 
                     <footer>
-                        <div class="likes">
+                        <div ClassName="likes">
                             <p>Stars</p>
                             <p>1.5K</p>
                         </div>
-                        <div class="projects">
+                        <div ClassName="projects">
                             <p>Forks</p>
                             <p>154</p>
                         </div>
