@@ -17,7 +17,7 @@ function Main() {
                     </div>
                     
                     <div ClassName="social">
-                        <a>GitHub</a>
+                        <p>GitHub</p>
                     </div>
 
                     <footer>
