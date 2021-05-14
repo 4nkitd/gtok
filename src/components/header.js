@@ -1,27 +1,25 @@
 
 function Header() {
     return (
-        <header>
-            <div ClassName="nav">
-                <input type="checkbox" id="nav-check" />
-                <div ClassName="nav-header">
-                    <div ClassName="nav-title">
-                        G-tok
-                    </div>
-                </div>
-                <div ClassName="nav-btn">
-                    <label for="nav-check">
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                    </label>
-                </div>
-
-                <div ClassName="nav-links">
-                    <a href="#" >Menu 1</a>
-                </div>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <a class="navbar-brand" href="#">TreeHouse</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarText">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item active">
+                        <a class="nav-link" href="#">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Github</a>
+                    </li>
+                </ul>
+                <span class="navbar-text">
+                    <small>Login</small>
+                </span>
             </div>
-        </header>
+        </nav>
     );
 }
 
