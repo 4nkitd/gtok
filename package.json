@@ -17,7 +17,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "deploy": "cp -rf ~/actions-runner/_work/gtok/gtok/build/* /var/www/html/gtok/"
+    "deploy": "cp -rf /home/ubuntu/actions-runner/_work/gtok/gtok/build/* /var/www/html/gtok/"
   },
   "eslintConfig": {
     "extends": [
