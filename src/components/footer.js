@@ -2,8 +2,12 @@
 function Footer() {
     return (
 
-        <nav class="navbar fixed-bottom navbar-light bg-light full-center">
-            Made with 💗 <a class="navbar-brand" href="https://dagar.in">by Dagar.in</a>
+        <nav className="navbar fixed-bottom navbar-light bg-light full-center">
+            Made with ⚛️ <a className="navbar-brand" href="https://dagar.in">
+                <small> 
+                    dagar.in
+                </small>
+                </a>
         </nav>
 
     );

@@ -5,7 +5,7 @@ import Main from './components/main';
 
 ReactDOM.render(
   <React.StrictMode>
-    <div ClassName="bg-theme">
+    <div className="bg-theme">
       <Main/>
     </div>
   </React.StrictMode>,

@@ -16,6 +16,47 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
       integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
     <title>React App</title>
+
+    <style>
+
+      ::-webkit-scrollbar {
+        display: none;
+      }
+
+      ::-webkit-scrollbar-button {
+        display: none;
+      }
+
+      body {
+        -ms-overflow-style: none;
+        overflow: hidden;
+      }
+
+      /* Let's get this party started */
+      ::-webkit-scrollbar {
+          width: 12px;
+      }
+      
+      /* Track */
+      ::-webkit-scrollbar-track {
+          -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3); 
+          -webkit-border-radius: 10px;
+          border-radius: 10px;
+      }
+      
+      /* Handle */
+      ::-webkit-scrollbar-thumb {
+          -webkit-border-radius: 10px;
+          border-radius: 10px;
+          background: rgba(255,0,0,0.8); 
+          -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.5); 
+      }
+      ::-webkit-scrollbar-thumb:window-inactive {
+        background: rgba(255,0,0,0.4); 
+      }
+
+
+    </style>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
