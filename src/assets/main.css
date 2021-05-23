@@ -188,10 +188,6 @@ body {
 }
 
 #login-container button {
-  width: 80%;
-  height: 80px;
-  font-size: 2rem;
-  margin: 30px 10% 0 10%;
   color: #fffffb;
   border: none;
   box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.5);
