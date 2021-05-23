@@ -5,21 +5,6 @@ import db from './data'
 var repo_state = 0
 var repo = db[repo_state]
 
-const onSwipe = (direction) => {
-    console.log('You swiped: ' + direction)
-}
-
-const onCardLeftScreen = (myIdentifier) => {
-    console.log(myIdentifier + ' left the screen')
-}
-
-
-function update_repo(repo, repo_state){
-
-    return repo[++repo_state]
-
-}
-
 function Main() {
 
     return (
@@ -47,7 +32,9 @@ function Main() {
                             {repo.description}
                         </div>
 
-                        <footer className="p-2 pb-0">
+                        <button onClick={() => { repo = repo[++repo_state] }} className="btn btn-sm btn-block" > NEXT </button>
+
+                        <footer className="p-2 pb-0 mt-4">
                             <div className="likes">
                                 <p className="mb-0" >Stars</p>
                                 <p className="mb-0" >{repo.stars}</p>
@@ -58,7 +45,7 @@ function Main() {
                             </div>
                         </footer>
 
-                        <button onClick={ () => { repo = repo[++repo_state] } } className="btn btn-sm btn-block" > NEXT </button>
+                        
 
                     </div>
 

@@ -130,12 +130,13 @@ body {
 }
 
 #login-container {
-  height: 400px;
-  width: 350px;
+  height: 70vh;
+  width: 80vw;
   padding: 20px;
   border-radius: 5px;
   background: #fffffb;
   position: relative;
+  padding-bottom: 50px;
   box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.5);
 }
 
@@ -196,6 +197,7 @@ body {
   background-size: 300% 300%;
   outline: none;
   transition: all 200ms ease-in-out;
+  transform: translateY(2px);
 }
 
 #login-container button:hover {
