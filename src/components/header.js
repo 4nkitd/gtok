@@ -2,64 +2,52 @@ import React from 'react';
 
 function Header({ selectedLanguage, onLanguageChange, savedCount, onOpenSaved }) {
   const languages = [
-    { label: 'All Languages', value: '' },
-    { label: 'JavaScript', value: 'javascript' },
-    { label: 'TypeScript', value: 'typescript' },
-    { label: 'Python', value: 'python' },
-    { label: 'Go', value: 'go' },
-    { label: 'Rust', value: 'rust' },
-    { label: 'C++', value: 'cpp' },
-    { label: 'Java', value: 'java' }
+    { label: '🔥 All Languages', value: '' },
+    { label: '⚡ JavaScript', value: 'javascript' },
+    { label: '🔷 TypeScript', value: 'typescript' },
+    { label: '🐍 Python', value: 'python' },
+    { label: '🐹 Go', value: 'go' },
+    { label: '🦀 Rust', value: 'rust' },
+    { label: '⚡ C++', value: 'cpp' },
+    { label: '☕ Java', value: 'java' }
   ];
 
   return (
-    <nav className="navbar navbar-expand-md navbar-dark bg-dark shadow-sm py-2 px-3">
+    <header className="gtok-navbar">
       <div className="container-fluid d-flex justify-content-between align-items-center">
-        <a className="navbar-brand d-flex align-items-center font-weight-bold text-white" href="/">
-          <span className="mr-2" role="img" aria-label="tree">🌳</span>
-          <span style={{ letterSpacing: '0.5px' }}>G.tok</span>
-          <span className="badge badge-primary ml-2 style-badge" style={{ fontSize: '0.65rem' }}>PROD</span>
-        </a>
+        <div className="d-flex align-items-center gap-2">
+          <span className="brand-gradient">G.tok</span>
+          <span className="badge badge-primary px-2 py-1 style-badge" style={{ fontSize: '0.65rem', borderRadius: '6px', background: 'rgba(139,92,246,0.2)', color: '#a78bfa', border: '1px solid rgba(139,92,246,0.3)' }}>
+            v2.0
+          </span>
+        </div>
 
-        <div className="d-flex align-items-center">
-          <div className="mr-2 mr-md-3">
-            <select
-              className="form-control form-control-sm bg-secondary text-white border-0"
-              value={selectedLanguage}
-              onChange={(e) => onLanguageChange(e.target.value)}
-              aria-label="Filter repositories by language"
-            >
-              {languages.map((lang) => (
-                <option key={lang.value} value={lang.value}>
-                  {lang.label}
-                </option>
-              ))}
-            </select>
-          </div>
+        <div className="d-flex align-items-center gap-3">
+          <select
+            className="nav-select"
+            value={selectedLanguage}
+            onChange={(e) => onLanguageChange(e.target.value)}
+            aria-label="Filter repositories by language"
+          >
+            {languages.map((lang) => (
+              <option key={lang.value} value={lang.value} style={{ background: '#151c2c', color: '#f3f4f6' }}>
+                {lang.label}
+              </option>
+            ))}
+          </select>
 
           <button
             type="button"
-            className="btn btn-sm btn-outline-light d-flex align-items-center mr-2"
+            className="btn-saved-trigger"
             onClick={onOpenSaved}
             title="View Starred Repositories"
           >
-            <span role="img" aria-label="star" className="mr-1">⭐️</span>
-            <span className="d-none d-sm-inline mr-1">Saved</span>
-            <span className="badge badge-pill badge-warning">{savedCount}</span>
+            <span>⭐️ Saved</span>
+            <span className="badge-saved-count">{savedCount}</span>
           </button>
-
-          <a
-            className="btn btn-sm btn-outline-secondary text-white"
-            href="https://github.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            title="GitHub"
-          >
-            GitHub
-          </a>
         </div>
       </div>
-    </nav>
+    </header>
   );
 }
 

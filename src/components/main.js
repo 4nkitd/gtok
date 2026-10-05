@@ -24,7 +24,14 @@ function Main() {
   const currentIndexRef = useRef(currentIndex);
   currentIndexRef.current = currentIndex;
 
-  // Persist savedRepos to localStorage
+  const childRefs = useMemo(
+    () =>
+      Array(repos.length)
+        .fill(0)
+        .map(() => React.createRef()),
+    [repos.length]
+  );
+
   useEffect(() => {
     try {
       localStorage.setItem('gtok_saved_repos', JSON.stringify(savedRepos));
@@ -33,7 +40,6 @@ function Main() {
     }
   }, [savedRepos]);
 
-  // Fetch repositories from GitHub API
   const fetchRepos = useCallback(async (language = '') => {
     setLoading(true);
     setError(null);
@@ -47,7 +53,7 @@ function Main() {
       );
 
       if (!response.ok) {
-        throw new Error(`GitHub API returned status ${response.status}`);
+        throw new Error(`GitHub API HTTP ${response.status}`);
       }
 
       const data = await response.json();
@@ -59,7 +65,7 @@ function Main() {
         throw new Error('No repositories found');
       }
     } catch (err) {
-      console.warn('Using fallback repository data due to fetch error:', err.message);
+      console.warn('Using curated fallback data:', err.message);
       let filteredFallback = fallbackRepos;
       if (language) {
         filteredFallback = fallbackRepos.filter(
@@ -69,7 +75,7 @@ function Main() {
       }
       setRepos(filteredFallback);
       setCurrentIndex(filteredFallback.length - 1);
-      setError('Live API unavailable. Showing curated popular repos.');
+      setError('GitHub API rate limited / offline. Displaying curated top repositories.');
     } finally {
       setLoading(false);
     }
@@ -78,14 +84,6 @@ function Main() {
   useEffect(() => {
     fetchRepos(selectedLanguage);
   }, [selectedLanguage, fetchRepos]);
-
-  const childRefs = useMemo(
-    () =>
-      Array(repos.length)
-        .fill(0)
-        .map(() => React.createRef()),
-    [repos.length]
-  );
 
   const updateCurrentIndex = (val) => {
     setCurrentIndex(val);
@@ -102,14 +100,36 @@ function Main() {
     updateCurrentIndex(index - 1);
   };
 
-  const swipe = async (dir) => {
-    if (currentIndex >= 0 && currentIndex < repos.length) {
-      const cardRef = childRefs[currentIndex];
-      if (cardRef && cardRef.current) {
-        await cardRef.current.swipe(dir);
+  const swipe = useCallback(
+    async (dir) => {
+      const idx = currentIndexRef.current;
+      if (idx >= 0 && idx < childRefs.length) {
+        const cardRef = childRefs[idx];
+        if (cardRef && cardRef.current) {
+          await cardRef.current.swipe(dir);
+        }
       }
-    }
-  };
+    },
+    [childRefs]
+  );
+
+  // Keyboard navigation shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (isSavedModalOpen) return;
+      if (e.key === 'ArrowLeft') {
+        swipe('left');
+      } else if (e.key === 'ArrowRight') {
+        swipe('right');
+      } else if (e.key === ' ' || e.key === 'Spacebar') {
+        if (repos[currentIndexRef.current]) {
+          window.open(repos[currentIndexRef.current].url, '_blank', 'noopener,noreferrer');
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isSavedModalOpen, repos, swipe]);
 
   const removeSavedRepo = (id) => {
     setSavedRepos((prev) => prev.filter((r) => r.id !== id));
@@ -124,77 +144,90 @@ function Main() {
         onOpenSaved={() => setIsSavedModalOpen(true)}
       />
 
-      <main className="container flex-grow-1 d-flex flex-column justify-content-center align-items-center py-3">
+      <main className="main-content">
         {loading ? (
-          <div className="text-center py-5 text-white">
-            <div className="spinner-border text-primary mb-3" role="status">
+          <div className="text-center py-5">
+            <div className="spinner-border text-purple mb-3" role="status" style={{ color: '#8b5cf6' }}>
               <span className="sr-only">Loading...</span>
             </div>
-            <p className="h5">Fetching trending repositories...</p>
+            <p className="h5 text-muted font-weight-bold">Discovering repositories...</p>
           </div>
         ) : currentIndex >= 0 && repos.length > 0 ? (
           <>
             {error && (
               <div
-                className="alert alert-warning py-1 px-3 mb-2 small text-center"
-                role="alert"
-                style={{ borderRadius: '20px', opacity: 0.9 }}
+                className="alert alert-dark py-1 px-3 mb-3 small text-center"
+                style={{
+                  borderRadius: '20px',
+                  background: 'rgba(245, 158, 11, 0.15)',
+                  border: '1px solid rgba(245, 158, 11, 0.3)',
+                  color: '#fbbf24'
+                }}
               >
                 {error}
               </div>
             )}
 
-            <div className="card-container">
+            <div className="card-stack">
               {repos.map((repo, index) => (
                 <TinderCard
                   ref={childRefs[index]}
-                  className="swipe"
+                  className="swipe-card"
                   key={repo.id || index}
                   onSwipe={(dir) => handleSwiped(dir, repo, index)}
                   preventSwipe={['up', 'down']}
                 >
-                  <div className="repo-card">
-                    <img
-                      src={repo.profile}
-                      alt={repo.username}
-                      className="repo-avatar"
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src =
-                          'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png';
-                      }}
-                    />
-
-                    <div className="repo-header">
-                      <a
-                        href={`https://github.com/${repo.username}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="repo-owner"
-                      >
-                        @{repo.username}
-                      </a>
-                      <h2 className="repo-title">
-                        <a href={repo.url} target="_blank" rel="noopener noreferrer">
-                          {repo.name}
-                        </a>
-                      </h2>
-                    </div>
-
-                    <div className="repo-meta">
-                      <span className="repo-lang">{repo.language}</span>
-                    </div>
-
-                    <p className="repo-description">{repo.description}</p>
-
-                    <div className="repo-footer-stats">
-                      <div className="stat-item">
-                        <div className="stat-label">Stars</div>
-                        <div className="stat-value">⭐️ {repo.stars}</div>
+                  <div className="gtok-card">
+                    <div>
+                      <div className="card-owner-bar">
+                        <img
+                          src={repo.profile}
+                          alt={repo.username}
+                          className="card-avatar"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src =
+                              'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png';
+                          }}
+                        />
+                        <div className="card-owner-info">
+                          <a
+                            href={`https://github.com/${repo.username}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="card-owner-handle"
+                          >
+                            @{repo.username}
+                          </a>
+                          <h2 className="card-repo-name">
+                            <a href={repo.url} target="_blank" rel="noopener noreferrer">
+                              {repo.name}
+                            </a>
+                          </h2>
+                        </div>
                       </div>
-                      <div className="stat-item">
-                        <div className="stat-label">Forks</div>
-                        <div className="stat-value">🍴 {repo.forks}</div>
+
+                      <div className="card-tags">
+                        <span className="lang-pill">
+                          <span>⚡</span> {repo.language || 'Code'}
+                        </span>
+                      </div>
+
+                      <p className="card-description">{repo.description}</p>
+                    </div>
+
+                    <div className="card-stats-grid">
+                      <div className="stat-box">
+                        <span className="stat-box-label">Stars</span>
+                        <span className="stat-box-value" style={{ color: '#f59e0b' }}>
+                          ⭐️ {repo.stars}
+                        </span>
+                      </div>
+                      <div className="stat-box">
+                        <span className="stat-box-label">Forks</span>
+                        <span className="stat-box-value" style={{ color: '#38bdf8' }}>
+                          🍴 {repo.forks}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -202,12 +235,12 @@ function Main() {
               ))}
             </div>
 
-            <div className="action-buttons">
+            <div className="controls-bar">
               <button
                 type="button"
-                className="action-btn pass"
+                className="ctrl-btn btn-pass"
                 onClick={() => swipe('left')}
-                title="Pass (Swipe Left)"
+                title="Pass (Left Arrow / Swipe Left)"
                 aria-label="Pass repository"
               >
                 ✕
@@ -215,13 +248,13 @@ function Main() {
 
               <button
                 type="button"
-                className="action-btn link"
+                className="ctrl-btn btn-open"
                 onClick={() => {
                   if (repos[currentIndex]) {
                     window.open(repos[currentIndex].url, '_blank', 'noopener,noreferrer');
                   }
                 }}
-                title="Open on GitHub"
+                title="Open on GitHub (Spacebar)"
                 aria-label="Open repository on GitHub"
               >
                 🔗
@@ -229,38 +262,46 @@ function Main() {
 
               <button
                 type="button"
-                className="action-btn star"
+                className="ctrl-btn btn-star"
                 onClick={() => swipe('right')}
-                title="Star / Save (Swipe Right)"
+                title="Star / Save (Right Arrow / Swipe Right)"
                 aria-label="Star repository"
               >
                 ⭐️
               </button>
             </div>
+
+            <div className="kbd-hints">
+              <span>Press <kbd className="kbd-badge">←</kbd> Pass</span>
+              <span>•</span>
+              <span><kbd className="kbd-badge">Space</kbd> Open</span>
+              <span>•</span>
+              <span><kbd className="kbd-badge">→</kbd> Star</span>
+            </div>
           </>
         ) : (
-          <div className="empty-state text-center text-white">
-            <span role="img" aria-label="party" style={{ fontSize: '3rem' }}>
-              🎉
-            </span>
-            <h3 className="mt-3 font-weight-bold">All caught up!</h3>
-            <p className="text-muted mt-2">
-              You&apos;ve swiped through all loaded repositories in this category.
+          <div className="empty-box">
+            <div className="empty-icon">🚀</div>
+            <h3 className="h4 font-weight-bold text-white mb-2">You&apos;ve seen all repositories!</h3>
+            <p className="text-muted small mb-4">
+              Switch languages or refresh the feed to discover more trending projects.
             </p>
-            <div className="mt-4 d-flex justify-content-center gap-2">
+            <div className="d-flex justify-content-center gap-3">
               <button
                 type="button"
-                className="btn btn-primary mr-2"
+                className="btn btn-primary px-4 py-2"
+                style={{ background: '#8b5cf6', borderColor: '#8b5cf6', borderRadius: '12px' }}
                 onClick={() => fetchRepos(selectedLanguage)}
               >
                 🔄 Refresh Feed
               </button>
               <button
                 type="button"
-                className="btn btn-outline-light"
+                className="btn btn-outline-light px-4 py-2"
+                style={{ borderRadius: '12px' }}
                 onClick={() => setIsSavedModalOpen(true)}
               >
-                ⭐️ View Saved ({savedRepos.length})
+                ⭐️ Saved ({savedRepos.length})
               </button>
             </div>
           </div>
