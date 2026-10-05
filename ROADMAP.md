@@ -44,6 +44,7 @@ Each milestone stops for Boss review before the next one starts.
 ## Milestone 4: hardening
 
 - [ ] Accessibility pass (focus order, labels, contrast, screen-reader announcements)
+- [ ] Filter pickers: keep keyboard arrow browsing and type-ahead (currently blurred on change to protect search quota)
 - [ ] Component tests for feed interactions
 - [ ] Performance pass (bundle size, image sizing, README fetch only near viewport)
 - [ ] README update
