@@ -108,6 +108,30 @@ describe('searchRising', () => {
     await expect(searchRising({ window: 'week', language: '', page: 1, now })).rejects.toBeInstanceOf(RateLimitError);
   });
 
+  it('honours retry-after on secondary limits', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(1_000_000);
+    mockFetch(new Response('{}', { status: 403, headers: { 'retry-after': '30' } }));
+    const error = (await searchRising({ window: 'week', language: '', page: 1, now }).catch((e: unknown) => e)) as RateLimitError;
+    expect(error.resetAt?.getTime()).toBe(1_030_000);
+  });
+
+  it('detects secondary limits that only say so in the body', async () => {
+    mockFetch(
+      new Response(JSON.stringify({ message: 'You have exceeded a secondary rate limit.' }), {
+        status: 403,
+        headers: { 'x-ratelimit-remaining': '7' },
+      }),
+    );
+    await expect(searchRising({ window: 'week', language: '', page: 1, now })).rejects.toBeInstanceOf(RateLimitError);
+  });
+
+  it('does not mistake other errors with retry-after for rate limits', async () => {
+    mockFetch(new Response('', { status: 503, headers: { 'retry-after': '5' } }));
+    await expect(searchRising({ window: 'week', language: '', page: 1, now })).rejects.toEqual(new GitHubError(503));
+    mockFetch(new Response(JSON.stringify({ message: 'Forbidden' }), { status: 403 }));
+    await expect(searchRising({ window: 'week', language: '', page: 1, now })).rejects.toEqual(new GitHubError(403));
+  });
+
   it('surfaces other failures as GitHubError', async () => {
     mockFetch(new Response('{}', { status: 422 }));
     await expect(searchRising({ window: 'week', language: '', page: 1, now })).rejects.toEqual(new GitHubError(422));

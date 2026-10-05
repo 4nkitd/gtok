@@ -32,6 +32,27 @@ describe('renderReadme', () => {
     expect(html.querySelector('a')?.getAttribute('href') ?? '').not.toMatch(/^javascript:/);
   });
 
+  it('never turns root-relative or odd links into executable schemes', () => {
+    const html = parse(
+      renderReadme(
+        '[a](/javascript:alert(1)) <a href="/ javascript:alert(2)">b</a> <a href="/data:text/html,x">c</a> <a href="mailto:a@b.co">d</a> <a href="//cdn.example/x">e</a> <a href="ftp://x.example/f">f</a>',
+        'o/r',
+      ),
+    );
+    const hrefs = [...html.querySelectorAll('a')].map((a) => a.getAttribute('href') ?? '');
+    expect(hrefs.every((href) => href === '' || /^(https:|mailto:)/.test(href))).toBe(true);
+    expect(hrefs[0]).toBe('https://github.com/o/r/blob/HEAD/javascript:alert(1)');
+    expect(hrefs).toContain('mailto:a@b.co');
+    expect(hrefs).toContain('https://cdn.example/x');
+    expect(html.querySelectorAll('a:not([href])')).toHaveLength(1);
+  });
+
+  it('keeps inline data images but drops executable image sources', () => {
+    const html = parse(renderReadme('<img src="data:image/png;base64,AAAA"><img src="/javascript:alert(1)">', 'o/r'));
+    const sources = [...html.querySelectorAll('img')].map((img) => img.getAttribute('src'));
+    expect(sources).toEqual(['data:image/png;base64,AAAA', 'https://raw.githubusercontent.com/o/r/HEAD/javascript:alert(1)']);
+  });
+
   it('points relative images at raw files and lazy-loads them', () => {
     const html = parse(renderReadme('![a](docs/a.png)\n\n<img src="/b.svg">\n\n![c](https://cdn.example/c.png)', 'o/r'));
     const sources = [...html.querySelectorAll('img')].map((img) => img.getAttribute('src'));
@@ -43,11 +64,17 @@ describe('renderReadme', () => {
     expect(html.querySelector('img')?.getAttribute('loading')).toBe('lazy');
   });
 
-  it('resolves picture srcset candidates', () => {
-    const html = parse(renderReadme('<picture><source srcset="dark.png 1x, https://x.example/l.png 2x"><img src="l.png"></picture>', 'o/r'));
+  it('resolves picture and img srcset candidates', () => {
+    const html = parse(
+      renderReadme(
+        '<picture><source srcset="dark.png 1x,https://x.example/l.png 2x"><img src="l.png" srcset="l@2x.png 2x"></picture>',
+        'o/r',
+      ),
+    );
     expect(html.querySelector('source')?.getAttribute('srcset')).toBe(
       'https://raw.githubusercontent.com/o/r/HEAD/dark.png 1x, https://x.example/l.png 2x',
     );
+    expect(html.querySelector('img')?.getAttribute('srcset')).toBe('https://raw.githubusercontent.com/o/r/HEAD/l@2x.png 2x');
   });
 
   it('opens links on GitHub in a new tab', () => {

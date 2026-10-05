@@ -24,13 +24,21 @@ function writeJson(key: string, value: unknown): void {
 
 function isRepo(value: unknown): value is Repo {
   const repo = value as Partial<Repo> | null;
-  return typeof repo?.id === 'number' && typeof repo.fullName === 'string' && typeof repo.url === 'string';
+  return (
+    typeof repo?.id === 'number' &&
+    typeof repo.fullName === 'string' &&
+    typeof repo.owner === 'string' &&
+    typeof repo.name === 'string' &&
+    typeof repo.url === 'string' &&
+    typeof repo.avatarUrl === 'string' &&
+    typeof repo.stars === 'number' &&
+    typeof repo.forks === 'number' &&
+    Array.isArray(repo.topics)
+  );
 }
 
 interface LegacyRepo {
   id: number;
-  name: string;
-  username: string;
   description?: string;
   starsCount?: number;
   forksCount?: number;
@@ -39,18 +47,22 @@ interface LegacyRepo {
   url: string;
 }
 
+const LEGACY_PLACEHOLDER_DESCRIPTION = 'No description provided.';
+
 function fromLegacy(item: unknown): Repo | null {
   const legacy = item as Partial<LegacyRepo> | null;
-  if (typeof legacy?.id !== 'number' || typeof legacy.name !== 'string' || typeof legacy.username !== 'string') return null;
-  if (typeof legacy.url !== 'string') return null;
+  if (typeof legacy?.id !== 'number' || typeof legacy.url !== 'string') return null;
+  const match = /^https:\/\/github\.com\/([^/]+)\/([^/?#]+)/.exec(legacy.url);
+  if (!match) return null;
+  const [, owner = '', name = ''] = match;
   return {
     id: legacy.id,
-    fullName: `${legacy.username}/${legacy.name}`,
-    owner: legacy.username,
-    name: legacy.name,
-    avatarUrl: legacy.profile ?? `https://github.com/${legacy.username}.png`,
+    fullName: `${owner}/${name}`,
+    owner,
+    name,
+    avatarUrl: legacy.profile ?? `https://github.com/${owner}.png`,
     url: legacy.url,
-    description: legacy.description ?? null,
+    description: legacy.description && legacy.description !== LEGACY_PLACEHOLDER_DESCRIPTION ? legacy.description : null,
     language: legacy.language && legacy.language !== 'Code' ? legacy.language : null,
     topics: [],
     stars: legacy.starsCount ?? 0,

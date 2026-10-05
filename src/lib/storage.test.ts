@@ -27,7 +27,7 @@ describe('saved repos', () => {
     expect(loadSaved()).toEqual([]);
     localStorage.setItem('gtok:saved', '{not json');
     expect(loadSaved()).toEqual([]);
-    localStorage.setItem('gtok:saved', JSON.stringify([repo, { id: 'bad' }, null]));
+    localStorage.setItem('gtok:saved', JSON.stringify([repo, { id: 'bad' }, null, { id: 2, fullName: 'a/b', url: 'u' }]));
     expect(loadSaved()).toEqual([repo]);
   });
 
@@ -49,6 +49,13 @@ describe('saved repos', () => {
           url: 'https://github.com/facebook/react',
         },
         { broken: true },
+        {
+          id: 8,
+          name: 'x',
+          username: 'unknown',
+          description: 'No description provided.',
+          url: 'https://github.com/real-owner/x',
+        },
       ]),
     );
 
@@ -66,6 +73,20 @@ describe('saved repos', () => {
         topics: [],
         stars: 228000,
         forks: 46000,
+        createdAt: null,
+      },
+      {
+        id: 8,
+        fullName: 'real-owner/x',
+        owner: 'real-owner',
+        name: 'x',
+        avatarUrl: 'https://github.com/real-owner.png',
+        url: 'https://github.com/real-owner/x',
+        description: null,
+        language: null,
+        topics: [],
+        stars: 0,
+        forks: 0,
         createdAt: null,
       },
     ]);

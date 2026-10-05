@@ -68,13 +68,16 @@ function toRepo(item: SearchItem): Repo {
   };
 }
 
-function rateLimitFrom(res: Response): RateLimitError | null {
+const SECONDARY_LIMIT_WAIT_MS = 60_000;
+
+async function rateLimitFrom(res: Response): Promise<RateLimitError | null> {
+  if (res.status !== 403 && res.status !== 429) return null;
   const retryAfter = res.headers.get('retry-after');
   if (retryAfter) return new RateLimitError(new Date(Date.now() + Number(retryAfter) * 1000));
   const reset = res.headers.get('x-ratelimit-reset');
-  const resetAt = reset ? new Date(Number(reset) * 1000) : null;
-  if (res.status === 429) return new RateLimitError(resetAt);
-  if (res.status === 403 && res.headers.get('x-ratelimit-remaining') === '0') return new RateLimitError(resetAt);
+  if (res.headers.get('x-ratelimit-remaining') === '0') return new RateLimitError(reset ? new Date(Number(reset) * 1000) : null);
+  const message = await res.text().catch(() => '');
+  if (res.status === 429 || /rate limit/i.test(message)) return new RateLimitError(new Date(Date.now() + SECONDARY_LIMIT_WAIT_MS));
   return null;
 }
 
@@ -100,7 +103,7 @@ export async function searchRising({ window, language, page, signal, now = new D
   url.searchParams.set('page', String(page));
 
   const res = await fetch(url, { headers: { Accept: 'application/vnd.github+json' }, signal });
-  if (!res.ok) throw rateLimitFrom(res) ?? new GitHubError(res.status);
+  if (!res.ok) throw (await rateLimitFrom(res)) ?? new GitHubError(res.status);
 
   const body = (await res.json()) as { total_count: number; items: SearchItem[] };
   return {
