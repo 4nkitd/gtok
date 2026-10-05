@@ -2,6 +2,7 @@ import { memo } from 'react';
 import { useReadme } from '../hooks/useReadme';
 import { describeAge, formatCount, formatStars } from '../lib/format';
 import type { Repo } from '../lib/types';
+import { recordOpen } from '../lib/opens';
 import { BookmarkIcon, OpenIcon, ShareIcon } from './Icons';
 
 interface RepoCardProps {
@@ -66,7 +67,8 @@ function RepoCard({ repo, index, now, nearby, saved, onToggleSave, onShare, onRe
             {repo.owner}
           </a>
           <h2 className="repo-name">
-            <a href={repo.url} target="_blank" rel="noopener noreferrer">
+            <a href={repo.url} target="_blank" rel="noopener noreferrer"
+              onClick={() => recordOpen(repo.fullName)} onAuxClick={(event) => { if (event.button === 1) recordOpen(repo.fullName); }}>
               {repo.name}
             </a>
           </h2>
@@ -106,7 +108,8 @@ function RepoCard({ repo, index, now, nearby, saved, onToggleSave, onShare, onRe
           </span>
           {saved ? 'Saved' : 'Save'}
         </button>
-        <a className="action" href={repo.url} target="_blank" rel="noopener noreferrer" title="Open on GitHub (O)">
+        <a className="action" href={repo.url} target="_blank" rel="noopener noreferrer" title="Open on GitHub (O)"
+          onClick={() => recordOpen(repo.fullName)} onAuxClick={(event) => { if (event.button === 1) recordOpen(repo.fullName); }}>
           <span className="action-icon">
             <OpenIcon />
           </span>

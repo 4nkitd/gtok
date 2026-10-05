@@ -7,26 +7,28 @@ import { clearReadmeCache } from './lib/readme';
 const searchItem = {
   id: 42,
   name: 'rocket',
-  full_name: 'acme/rocket',
-  html_url: 'https://github.com/acme/rocket',
+  fullName: 'acme/rocket',
+  url: 'https://github.com/acme/rocket',
   description: 'Launches things',
   language: 'Rust',
   topics: ['cli'],
-  stargazers_count: 6012,
-  forks_count: 12,
-  created_at: new Date(Date.now() - 4 * 86_400_000).toISOString(),
-  owner: { login: 'acme', avatar_url: 'https://avatars.example/acme?v=4' },
+  stars: 6012,
+  forks: 12,
+  createdAt: new Date(Date.now() - 4 * 86_400_000).toISOString(),
+  owner: 'acme',
+  avatarUrl: 'https://avatars.example/acme?v=4',
 };
 
-const secondItem = { ...searchItem, id: 43, name: 'comet', full_name: 'acme/comet', html_url: 'https://github.com/acme/comet' };
+const secondItem = { ...searchItem, id: 43, name: 'comet', fullName: 'acme/comet', url: 'https://github.com/acme/comet' };
 
 function mockGitHub(items = [searchItem]) {
   const fetchMock = vi.fn<typeof fetch>(async (input) => {
     const url = String(input);
-    if (url.startsWith('https://api.github.com/search/repositories')) {
-      return Response.json({ total_count: items.length, items });
+    if (url.includes('/api/repos')) {
+      return Response.json({ repos: items, hasMore: false, stale: false, cachedAt: new Date().toISOString() });
     }
-    if (url.endsWith('/README.md')) return new Response('# Rocket\n\nFast launches.');
+    if (url.includes('/api/readme')) return Response.json({ markdown: '# Rocket\n\nFast launches.' });
+    if (url === '/api/opens') return new Response(null, { status: 204 });
     return new Response('', { status: 404 });
   });
   vi.stubGlobal('fetch', fetchMock);
@@ -129,25 +131,25 @@ describe('App', () => {
     render(<App />);
 
     await screen.findByRole('article', { name: 'acme/rocket' });
-    const firstQuery = new URL(String(fetchMock.mock.calls[0]?.[0])).searchParams.get('q');
-    expect(firstQuery).toContain('language:"Go"');
+    const firstQuery = new URL(String(fetchMock.mock.calls[0]?.[0])).searchParams.get('language');
+    expect(firstQuery).toBe('Go');
 
     await user.selectOptions(screen.getByRole('combobox', { name: 'Language' }), 'Rust');
     expect(location.search).toBe('?since=day&lang=Rust');
     await waitFor(() => {
-      const queries = fetchMock.mock.calls.map(([url]) => new URL(String(url)).searchParams.get('q') ?? '');
-      expect(queries.some((q) => q.includes('language:"Rust"'))).toBe(true);
+      const queries = fetchMock.mock.calls.map(([url]) => new URL(String(url), location.origin).searchParams.get('language'));
+      expect(queries).toContain('Rust');
     });
   });
 
   it('explains a rate limit and offers a retry', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn<typeof fetch>(async () => new Response('{}', { status: 403, headers: { 'x-ratelimit-remaining': '0' } })),
+      vi.fn<typeof fetch>(async () => new Response('{}', { status: 429, headers: { 'Retry-After': '60' } })),
     );
     render(<App />);
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('GitHub is limiting searches from your network');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Search is temporarily limited');
     expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
   });
 
@@ -197,6 +199,23 @@ describe('App', () => {
     await screen.findByRole('article', { name: 'acme/rocket' });
     expect(screen.getByRole('combobox', { name: 'Created' })).toHaveValue('week');
     expect(screen.getByRole('combobox', { name: 'Language' })).toHaveValue('');
-    expect(new URL(String(fetchMock.mock.calls[0]?.[0])).searchParams.get('q')).toMatch(/^created:>=\d{4}-\d{2}-\d{2}$/);
+    expect(new URL(String(fetchMock.mock.calls[0]?.[0])).searchParams.get('window')).toBe('week');
+  });
+
+  it('counts the O shortcut, but not previews or saves', async () => {
+    const fetchMock = mockGitHub();
+    const user = userEvent.setup();
+    const openMock = vi.fn();
+    vi.stubGlobal('open', openMock);
+    render(<App />);
+    await user.click(await screen.findByRole('button', { name: 'Read the README' }));
+    await user.click(screen.getByRole('button', { name: 'Close README' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    const events = () => fetchMock.mock.calls.filter(([url]) => url === '/api/opens');
+    expect(events()).toHaveLength(0);
+    await user.keyboard('o');
+    expect(openMock).toHaveBeenCalledWith(searchItem.url, '_blank', 'noopener,noreferrer');
+    expect(events()).toHaveLength(1);
+    expect(events()[0]?.[1]).toMatchObject({ body: JSON.stringify({ repo: 'acme/rocket' }), credentials: 'omit', keepalive: true });
   });
 });

@@ -1,7 +1,6 @@
 import DOMPurify from 'dompurify';
 import { marked } from 'marked';
 
-const README_NAMES = ['README.md', 'readme.md', 'Readme.md'];
 const cache = new Map<string, Promise<string | null>>();
 
 const LINK_PROTOCOLS = new Set(['http:', 'https:', 'mailto:']);
@@ -59,12 +58,10 @@ export function renderReadme(markdown: string, fullName: string): string {
 }
 
 async function fetchReadme(fullName: string): Promise<string | null> {
-  for (const name of README_NAMES) {
-    const res = await fetch(`https://raw.githubusercontent.com/${fullName}/HEAD/${name}`);
-    if (res.ok) return renderReadme(await res.text(), fullName);
-    if (res.status !== 404) throw new Error(`README request failed with ${res.status}`);
-  }
-  return null;
+  const res = await fetch(`/api/readme?repo=${encodeURIComponent(fullName)}`, { credentials: 'omit' });
+  if (!res.ok) throw new Error(`README request failed with ${res.status}`);
+  const { markdown } = await res.json() as { markdown: string | null };
+  return markdown === null ? null : renderReadme(markdown, fullName);
 }
 
 export function loadReadme(fullName: string): Promise<string | null> {
@@ -75,6 +72,7 @@ export function loadReadme(fullName: string): Promise<string | null> {
     throw error;
   });
   cache.set(fullName, pending);
+  if (cache.size > 60) cache.delete(cache.keys().next().value!);
   return pending;
 }
 

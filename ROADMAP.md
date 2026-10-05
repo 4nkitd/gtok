@@ -4,16 +4,25 @@ Goal: a production-ready, natural-feeling way to discover rising GitHub reposito
 
 ## Decisions
 
-- Feed: rising repos via GitHub search (`created:>DATE`, sorted by stars), client-only, no backend.
+- Feed: rising repos via GitHub search (`created:>=DATE`, sorted by stars), served through a shared Worker/D1 cache.
 - Interaction: full-screen vertical feed (scroll/swipe up for next), mobile-first, keyboard on desktop.
 - Card: owner, name, description, topics, language, stars, forks, README excerpt with expand.
 - Controls: time window (Today / Week / Month) and language. Seen repos are hidden by default.
 - Save: local only (localStorage). GitHub login is out of scope for now.
 - Look: clean, quiet, content-first, follows system light/dark theme, one accent color.
 - Stack: Vite, React, TypeScript, Vitest, ESLint. No Bootstrap, no CDN CSS.
-- Hosting: local only. CI runs lint, typecheck, tests and build.
+- Hosting: Cloudflare Worker with static assets, custom domain `gtok.dagar.in`. CI checks only; deployment is manual.
+- Signals: aggregate daily repository-open counts only. No visitor IDs or server-side browsing history. Recommendations deferred.
 
 Each milestone stops for Boss review before the next one starts.
+
+## Backend and deployment (authorized after milestone 2)
+
+- [x] Shared search and README caches with rate-limit protection and stale fallback
+- [x] Aggregate-only open counts in D1, private CLI report and 30-day cleanup
+- [x] Same-origin API integration and public privacy disclosure
+- [x] Backend tests against SQLite/D1, build and deployment configuration
+- [x] Code review, public deployment and live HTTPS/cache/counter verification
 
 ## Milestone 1: foundation and data layer
 
@@ -47,4 +56,4 @@ Each milestone stops for Boss review before the next one starts.
 - [ ] Filter pickers: keep keyboard arrow browsing and type-ahead (currently blurred on change to protect search quota)
 - [ ] Component tests for feed interactions
 - [ ] Performance pass (bundle size, image sizing, README fetch only near viewport)
-- [ ] README update
+- [x] README update

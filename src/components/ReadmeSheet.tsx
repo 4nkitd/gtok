@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useReadme } from '../hooks/useReadme';
 import type { Repo } from '../lib/types';
+import { recordOpen } from '../lib/opens';
 import { CloseIcon } from './Icons';
 
 interface ReadmeSheetProps {
@@ -54,7 +55,8 @@ export default function ReadmeSheet({ repo, onClose }: ReadmeSheetProps) {
               </h2>
               <span className="sheet-subtitle">{repo.owner}</span>
             </div>
-            <a className="pill-link" href={repo.url} target="_blank" rel="noopener noreferrer">
+            <a className="pill-link" href={repo.url} target="_blank" rel="noopener noreferrer"
+              onClick={() => recordOpen(repo.fullName)} onAuxClick={(event) => { if (event.button === 1) recordOpen(repo.fullName); }}>
               Open on GitHub
             </a>
             <button type="button" className="icon-button" onClick={onClose} aria-label="Close README">

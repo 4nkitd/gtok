@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useFeed } from '../hooks/useFeed';
 import { RateLimitError } from '../lib/github';
+import { recordOpen } from '../lib/opens';
 import type { Repo, TimeWindow } from '../lib/types';
 import RepoCard from './RepoCard';
 
@@ -25,8 +26,8 @@ function describeError(error: Error): { title: string; detail: string } {
   if (error instanceof RateLimitError) {
     const time = error.resetAt?.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
     return {
-      title: 'GitHub is limiting searches from your network',
-      detail: time ? `Searching works again at ${time}.` : 'Wait a minute, then try again.',
+      title: 'Search is temporarily limited',
+      detail: time ? `Try again after ${time}.` : 'Wait a minute, then try again.',
     };
   }
   if (!navigator.onLine || error instanceof TypeError) {
@@ -43,7 +44,7 @@ export default function Feed(props: FeedProps) {
   const { window, language, savedIds, paused, onToggleSave, onShare, onReadMore, onSeen, onWindowChange } = props;
   const [hidden] = useState(() => new Set(props.seenIds));
   const [now] = useState(() => new Date());
-  const { repos, loading, hasMore, stalled, error, loadMore } = useFeed(window, language, hidden, now);
+  const { repos, loading, hasMore, stalled, stale, error, loadMore } = useFeed(window, language, hidden, now);
   const [active, setActive] = useState(0);
   const scrollerRef = useRef<HTMLDivElement>(null);
 
@@ -94,7 +95,10 @@ export default function Feed(props: FeedProps) {
           if (repo) onToggleSave(repo);
           break;
         case 'o':
-          if (repo) globalThis.open(repo.url, '_blank', 'noopener,noreferrer');
+          if (repo && !event.repeat) {
+            recordOpen(repo.fullName);
+            globalThis.open(repo.url, '_blank', 'noopener,noreferrer');
+          }
           break;
         case 'r':
           if (repo) onReadMore(repo);
@@ -159,7 +163,8 @@ export default function Feed(props: FeedProps) {
   }
 
   return (
-    <main className="feed" ref={scrollerRef} aria-label={`Rising ${scope}`}>
+    <main className="feed" data-stale={stale} ref={scrollerRef} aria-label={`Rising ${scope}`}>
+      {stale && <p className="cache-notice" role="status">Showing older cached results. Reload to check for updates.</p>}
       {repos.map((repo, index) => (
         <RepoCard
           key={repo.id}

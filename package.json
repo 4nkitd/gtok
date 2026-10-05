@@ -10,11 +10,16 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.worker.json --noEmit",
     "lint": "eslint .",
-    "test": "vitest run",
+    "test": "vitest run && vitest run --config vitest.worker.config.ts",
     "test:watch": "vitest",
-    "check": "npm run lint && npm run typecheck && npm test && npm run build"
+    "check": "npm run lint && npm run typecheck && npm test && npm run build && wrangler deploy --dry-run --outdir .worker-build",
+    "dev:worker": "wrangler dev --ip 127.0.0.1 --port 8787",
+    "db:local": "wrangler d1 migrations apply gtok-db --local",
+    "db:remote": "wrangler d1 migrations apply gtok-db --remote",
+    "deploy": "npm run check && npm run db:remote && wrangler deploy",
+    "stats": "wrangler d1 execute gtok-db --remote --command \"$(cat worker/stats.sql)\""
   },
   "dependencies": {
     "dompurify": "^3.4.16",
@@ -23,20 +28,25 @@
     "react-dom": "^19.3.0"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "5.20261005.1",
     "@eslint/js": "^10.0.1",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",
+    "@types/node": "24.19.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
+    "esbuild": "0.28.1",
     "eslint": "^10.12.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.13.0",
     "jsdom": "^30.1.2",
+    "miniflare": "5.20261001.0-alpha",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.71.1",
     "vite": "^8.3.2",
-    "vitest": "^5.0.3"
+    "vitest": "^5.0.3",
+    "wrangler": "4.147.0"
   }
 }

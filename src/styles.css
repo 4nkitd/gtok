@@ -151,12 +151,37 @@ select {
   display: none;
 }
 
+.cache-notice {
+  position: fixed;
+  top: calc(var(--topbar) + var(--safe-top));
+  inset-inline: 0;
+  z-index: 9;
+  margin: 0;
+  padding: 4px 16px;
+  background: var(--surface-2);
+  font-size: 12px;
+  text-align: center;
+}
+
+.feed[data-stale='true'] .slide {
+  padding-top: calc(var(--topbar) + var(--safe-top) + 44px);
+}
+
+.privacy-link {
+  position: fixed;
+  bottom: calc(4px + var(--safe-bottom));
+  right: calc(20px + var(--safe-right));
+  font-size: 11px;
+  color: var(--muted);
+  text-underline-offset: 2px;
+}
+
 .slide {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   column-gap: 14px;
   height: 100dvh;
-  padding: calc(var(--topbar) + var(--safe-top) + 8px) calc(14px + var(--safe-right)) calc(20px + var(--safe-bottom))
+  padding: calc(var(--topbar) + var(--safe-top) + 8px) calc(14px + var(--safe-right)) calc(32px + var(--safe-bottom))
     calc(20px + var(--safe-left));
   scroll-snap-align: start;
   scroll-snap-stop: always;

@@ -4,3 +4,7 @@ coverage
 .DS_Store
 *.local
 npm-debug.log*
+.wrangler
+.worker-build
+.dev.vars*
+.env*

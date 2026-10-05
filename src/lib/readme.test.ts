@@ -90,27 +90,23 @@ describe('renderReadme', () => {
 });
 
 describe('loadReadme', () => {
-  it('falls back through README name variants', async () => {
-    const fetchMock = vi
-      .fn<typeof fetch>()
-      .mockResolvedValueOnce(new Response('', { status: 404 }))
-      .mockResolvedValueOnce(new Response('# lower'));
+  it('loads Markdown through the same-origin cache', async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValueOnce(Response.json({ markdown: '# lower' }));
     vi.stubGlobal('fetch', fetchMock);
 
     expect(parse((await loadReadme('o/r')) ?? '').textContent).toContain('lower');
     expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
-      'https://raw.githubusercontent.com/o/r/HEAD/README.md',
-      'https://raw.githubusercontent.com/o/r/HEAD/readme.md',
+      '/api/readme?repo=o%2Fr',
     ]);
   });
 
   it('returns null when no README exists', async () => {
-    vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockImplementation(async () => new Response('', { status: 404 })));
+    vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockImplementation(async () => Response.json({ markdown: null })));
     expect(await loadReadme('o/none')).toBeNull();
   });
 
   it('caches successful loads', async () => {
-    const fetchMock = vi.fn<typeof fetch>().mockImplementation(async () => new Response('# hi'));
+    const fetchMock = vi.fn<typeof fetch>().mockImplementation(async () => Response.json({ markdown: '# hi' }));
     vi.stubGlobal('fetch', fetchMock);
     await loadReadme('o/r');
     await loadReadme('o/r');
@@ -121,7 +117,7 @@ describe('loadReadme', () => {
     const fetchMock = vi
       .fn<typeof fetch>()
       .mockResolvedValueOnce(new Response('', { status: 500 }))
-      .mockResolvedValueOnce(new Response('# ok'));
+      .mockResolvedValueOnce(Response.json({ markdown: '# ok' }));
     vi.stubGlobal('fetch', fetchMock);
 
     await expect(loadReadme('o/r')).rejects.toThrow('500');

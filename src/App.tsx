@@ -86,6 +86,7 @@ export default function App() {
         onWindowChange={setWindow}
       />
       <ReadmeSheet repo={sheetRepo} onClose={closeSheet} />
+      <a className="privacy-link" href="/privacy" target="_blank" rel="noopener noreferrer">About & privacy</a>
       <p className="keyboard-hint" aria-hidden="true">
         <span>
           <kbd>J</kbd>
