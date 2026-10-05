@@ -43,7 +43,7 @@ export default function Feed(props: FeedProps) {
   const { window, language, savedIds, paused, onToggleSave, onShare, onReadMore, onSeen, onWindowChange } = props;
   const [hidden] = useState(() => new Set(props.seenIds));
   const [now] = useState(() => new Date());
-  const { repos, loading, hasMore, stalled, error, loadMore } = useFeed(window, language, hidden);
+  const { repos, loading, hasMore, stalled, error, loadMore } = useFeed(window, language, hidden, now);
   const [active, setActive] = useState(0);
   const scrollerRef = useRef<HTMLDivElement>(null);
 

@@ -21,7 +21,7 @@ export interface FeedState {
 }
 
 // Remount (via React key) to change filters; one hook instance serves one window/language pair.
-export function useFeed(window: TimeWindow, language: string, hidden: ReadonlySet<number>) {
+export function useFeed(window: TimeWindow, language: string, hidden: ReadonlySet<number>, now: Date) {
   const [state, setState] = useState<FeedState>({ repos: [], loading: true, hasMore: true, stalled: false, error: null });
   const sessionRef = useRef<Session | null>(null);
 
@@ -35,7 +35,7 @@ export function useFeed(window: TimeWindow, language: string, hidden: ReadonlySe
       let fresh: Repo[] = [];
       // Skip ahead when a whole page is already seen, but cap it so one scroll can't burn the search quota.
       for (let attempt = 0; fresh.length === 0 && session.hasMore && attempt < MAX_EMPTY_PAGES; attempt++) {
-        const result = await searchRising({ window, language, page: session.page + 1, signal: session.controller.signal });
+        const result = await searchRising({ window, language, page: session.page + 1, signal: session.controller.signal, now });
         session.page += 1;
         session.hasMore = result.hasMore;
         fresh = result.repos.filter((repo) => !hidden.has(repo.id) && !session.ids.has(repo.id));
@@ -55,7 +55,7 @@ export function useFeed(window: TimeWindow, language: string, hidden: ReadonlySe
     } finally {
       session.loading = false;
     }
-  }, [window, language, hidden]);
+  }, [window, language, hidden, now]);
 
   useEffect(() => {
     const session: Session = { controller: new AbortController(), page: 0, hasMore: true, loading: false, ids: new Set() };

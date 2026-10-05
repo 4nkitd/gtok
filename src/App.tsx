@@ -18,7 +18,7 @@ function readFilters(): Filters {
   const since = params.get('since');
   const lang = params.get('lang') ?? '';
   return {
-    window: since && since in WINDOW_LABELS ? (since as TimeWindow) : 'week',
+    window: since && Object.hasOwn(WINDOW_LABELS, since) ? (since as TimeWindow) : 'week',
     language: LANGUAGES.includes(lang) ? lang : '',
   };
 }

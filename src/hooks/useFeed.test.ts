@@ -24,6 +24,7 @@ function repo(id: number): Repo {
 }
 
 const none = new Set<number>();
+const now = new Date('2026-10-05T12:00:00Z');
 const seenFirstThree = new Set([1, 2, 3]);
 const seenFirst = new Set([1]);
 
@@ -34,19 +35,19 @@ beforeEach(() => {
 describe('useFeed', () => {
   it('loads the first page on mount', async () => {
     searchRising.mockResolvedValueOnce({ repos: [repo(1), repo(2)], hasMore: true });
-    const { result } = renderHook(() => useFeed('week', 'Go', none));
+    const { result } = renderHook(() => useFeed('week', 'Go', none, now));
 
     expect(result.current.loading).toBe(true);
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.repos.map((r) => r.id)).toEqual([1, 2]);
-    expect(searchRising).toHaveBeenCalledWith(expect.objectContaining({ window: 'week', language: 'Go', page: 1 }));
+    expect(searchRising).toHaveBeenCalledWith(expect.objectContaining({ window: 'week', language: 'Go', page: 1, now }));
   });
 
   it('appends later pages without duplicating repos that shifted between pages', async () => {
     searchRising
       .mockResolvedValueOnce({ repos: [repo(1), repo(2)], hasMore: true })
       .mockResolvedValueOnce({ repos: [repo(2), repo(3)], hasMore: false });
-    const { result } = renderHook(() => useFeed('week', '', none));
+    const { result } = renderHook(() => useFeed('week', '', none, now));
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     await act(() => result.current.loadMore());
@@ -59,7 +60,7 @@ describe('useFeed', () => {
     searchRising
       .mockResolvedValueOnce({ repos: [repo(1), repo(2)], hasMore: true })
       .mockResolvedValueOnce({ repos: [repo(3), repo(4)], hasMore: true });
-    const { result } = renderHook(() => useFeed('week', '', seenFirstThree));
+    const { result } = renderHook(() => useFeed('week', '', seenFirstThree, now));
 
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.repos.map((r) => r.id)).toEqual([4]);
@@ -68,7 +69,7 @@ describe('useFeed', () => {
 
   it('stops after three fully seen pages and reports it is stalled', async () => {
     searchRising.mockResolvedValue({ repos: [repo(1)], hasMore: true });
-    const { result } = renderHook(() => useFeed('week', '', seenFirst));
+    const { result } = renderHook(() => useFeed('week', '', seenFirst, now));
 
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(searchRising).toHaveBeenCalledTimes(3);
@@ -81,7 +82,7 @@ describe('useFeed', () => {
       .mockResolvedValueOnce({ repos: [repo(1)], hasMore: true })
       .mockRejectedValueOnce(new Error('boom'))
       .mockResolvedValueOnce({ repos: [repo(2)], hasMore: false });
-    const { result } = renderHook(() => useFeed('week', '', none));
+    const { result } = renderHook(() => useFeed('week', '', none, now));
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     await act(() => result.current.loadMore());
@@ -94,13 +95,13 @@ describe('useFeed', () => {
     expect(searchRising.mock.calls.map(([params]) => (params as { page: number }).page)).toEqual([1, 2, 2]);
   });
 
-  it('ignores results that arrive after unmount', async () => {
-    let resolve: (value: unknown) => void = () => {};
-    searchRising.mockReturnValueOnce(new Promise((r) => (resolve = r)));
-    const { result, unmount } = renderHook(() => useFeed('week', '', none));
+  it('aborts the in-flight search on unmount', () => {
+    searchRising.mockReturnValueOnce(new Promise(() => {}));
+    const { unmount } = renderHook(() => useFeed('week', '', none, now));
+    const { signal } = searchRising.mock.calls[0]?.[0] as { signal: AbortSignal };
+
+    expect(signal.aborted).toBe(false);
     unmount();
-    resolve({ repos: [repo(1)], hasMore: false });
-    await Promise.resolve();
-    expect(result.current.repos).toEqual([]);
+    expect(signal.aborted).toBe(true);
   });
 });

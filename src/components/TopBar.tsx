@@ -22,7 +22,13 @@ export default function TopBar({ window, language, onWindowChange, onLanguageCha
       <div className="filters">
         <label className="picker">
           <span className="visually-hidden">Created</span>
-          <select value={window} onChange={(event) => onWindowChange(event.target.value as TimeWindow)}>
+          <select
+            value={window}
+            onChange={(event) => {
+              event.currentTarget.blur();
+              onWindowChange(event.target.value as TimeWindow);
+            }}
+          >
             {Object.entries(WINDOW_LABELS).map(([value, label]) => (
               <option key={value} value={value}>
                 {label}
@@ -33,7 +39,13 @@ export default function TopBar({ window, language, onWindowChange, onLanguageCha
         </label>
         <label className="picker">
           <span className="visually-hidden">Language</span>
-          <select value={language} onChange={(event) => onLanguageChange(event.target.value)}>
+          <select
+            value={language}
+            onChange={(event) => {
+              event.currentTarget.blur();
+              onLanguageChange(event.target.value);
+            }}
+          >
             <option value="">All languages</option>
             {LANGUAGES.map((name) => (
               <option key={name} value={name}>

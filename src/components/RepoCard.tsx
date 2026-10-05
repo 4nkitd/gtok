@@ -33,7 +33,7 @@ function ReadmePreview({ repo, enabled, onReadMore }: { repo: Repo; enabled: boo
   return (
     <div className="readme-preview" onClick={state.status === 'ready' ? () => onReadMore(repo) : undefined}>
       {state.status === 'ready' ? (
-        <div className="readme-preview-body markdown" dangerouslySetInnerHTML={{ __html: state.html }} />
+        <div className="readme-preview-body markdown" inert dangerouslySetInnerHTML={{ __html: state.html }} />
       ) : (
         <div className="readme-skeleton" aria-label="Loading README">
           <span />

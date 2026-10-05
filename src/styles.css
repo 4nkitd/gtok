@@ -12,6 +12,8 @@
   --topbar: 56px;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
   --font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
   --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
 }
@@ -91,7 +93,7 @@ select {
   justify-content: space-between;
   gap: 12px;
   height: calc(var(--topbar) + var(--safe-top));
-  padding: var(--safe-top) 16px 0 20px;
+  padding: var(--safe-top) calc(16px + var(--safe-right)) 0 calc(20px + var(--safe-left));
   background: var(--bg);
 }
 
@@ -122,7 +124,7 @@ select {
   border: 1px solid var(--line);
   border-radius: 999px;
   background: var(--surface);
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 550;
   text-overflow: ellipsis;
   cursor: pointer;
@@ -154,7 +156,8 @@ select {
   grid-template-columns: minmax(0, 1fr) auto;
   column-gap: 14px;
   height: 100dvh;
-  padding: calc(var(--topbar) + var(--safe-top) + 8px) 14px calc(20px + var(--safe-bottom)) 20px;
+  padding: calc(var(--topbar) + var(--safe-top) + 8px) calc(14px + var(--safe-right)) calc(20px + var(--safe-bottom))
+    calc(20px + var(--safe-left));
   scroll-snap-align: start;
   scroll-snap-stop: always;
 }
@@ -683,7 +686,7 @@ kbd {
 
 @media (min-width: 760px) {
   .topbar {
-    padding-inline: 28px;
+    padding-inline: calc(28px + var(--safe-left)) calc(28px + var(--safe-right));
   }
 
   .picker select {
@@ -694,7 +697,7 @@ kbd {
     grid-template-columns: minmax(0, 620px) auto;
     justify-content: center;
     column-gap: 28px;
-    padding-inline: 32px;
+    padding-inline: calc(32px + var(--safe-left)) calc(32px + var(--safe-right));
     padding-bottom: 40px;
   }
 

@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
@@ -18,11 +18,13 @@ const searchItem = {
   owner: { login: 'acme', avatar_url: 'https://avatars.example/acme?v=4' },
 };
 
-function mockGitHub() {
+const secondItem = { ...searchItem, id: 43, name: 'comet', full_name: 'acme/comet', html_url: 'https://github.com/acme/comet' };
+
+function mockGitHub(items = [searchItem]) {
   const fetchMock = vi.fn<typeof fetch>(async (input) => {
     const url = String(input);
     if (url.startsWith('https://api.github.com/search/repositories')) {
-      return Response.json({ total_count: 1, items: [searchItem] });
+      return Response.json({ total_count: items.length, items });
     }
     if (url.endsWith('/README.md')) return new Response('# Rocket\n\nFast launches.');
     return new Response('', { status: 404 });
@@ -31,8 +33,41 @@ function mockGitHub() {
   return fetchMock;
 }
 
+class FakeIntersectionObserver {
+  static latest: FakeIntersectionObserver | null = null;
+  readonly callback: IntersectionObserverCallback;
+  elements: Element[] = [];
+
+  constructor(callback: IntersectionObserverCallback) {
+    this.callback = callback;
+    FakeIntersectionObserver.latest = this;
+  }
+
+  observe(element: Element) {
+    this.elements.push(element);
+  }
+
+  disconnect() {
+    this.elements = [];
+  }
+}
+
+function scrollSlideIntoView(index: number) {
+  const observer = FakeIntersectionObserver.latest;
+  const target = observer?.elements.find((element) => (element as HTMLElement).dataset.index === String(index));
+  if (!observer || !target) throw new Error(`Slide ${index} is not observed`);
+  act(() => observer.callback([{ isIntersecting: true, target } as unknown as IntersectionObserverEntry], observer as never));
+}
+
+const scrolledTo: string[] = [];
+
 beforeEach(() => {
   history.replaceState(null, '', '/');
+  scrolledTo.length = 0;
+  vi.stubGlobal('IntersectionObserver', FakeIntersectionObserver);
+  Element.prototype.scrollIntoView = function (this: Element) {
+    scrolledTo.push((this as HTMLElement).dataset.index ?? '');
+  };
   HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) {
     this.setAttribute('open', '');
   };
@@ -114,5 +149,54 @@ describe('App', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('GitHub is limiting searches from your network');
     expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
+  });
+
+  it('marks repos seen as they scroll into view and moves with J and K', async () => {
+    mockGitHub([searchItem, secondItem]);
+    const user = userEvent.setup();
+    render(<App />);
+    await screen.findByRole('article', { name: 'acme/comet' });
+
+    scrollSlideIntoView(0);
+    expect(JSON.parse(localStorage.getItem('gtok:seen') ?? '[]')).toEqual([42]);
+
+    await user.keyboard('j');
+    expect(scrolledTo).toEqual(['1']);
+    scrollSlideIntoView(1);
+    expect(JSON.parse(localStorage.getItem('gtok:seen') ?? '[]')).toEqual([42, 43]);
+
+    await user.keyboard('k');
+    expect(scrolledTo).toEqual(['1', '0']);
+  });
+
+  it('ignores feed shortcuts while the README sheet is open', async () => {
+    mockGitHub();
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: 'Read the README' }));
+    await user.keyboard('s');
+    expect(localStorage.getItem('gtok:saved')).toBe('[]');
+  });
+
+  it('releases focus from a filter after choosing so arrow keys move the feed', async () => {
+    mockGitHub();
+    const user = userEvent.setup();
+    render(<App />);
+    const language = screen.getByRole('combobox', { name: 'Language' });
+
+    await user.selectOptions(language, 'Go');
+    expect(language).not.toHaveFocus();
+  });
+
+  it('falls back to this week for unknown URL values', async () => {
+    history.replaceState(null, '', '/?since=toString&lang=Klingon');
+    const fetchMock = mockGitHub();
+    render(<App />);
+
+    await screen.findByRole('article', { name: 'acme/rocket' });
+    expect(screen.getByRole('combobox', { name: 'Created' })).toHaveValue('week');
+    expect(screen.getByRole('combobox', { name: 'Language' })).toHaveValue('');
+    expect(new URL(String(fetchMock.mock.calls[0]?.[0])).searchParams.get('q')).toMatch(/^created:>=\d{4}-\d{2}-\d{2}$/);
   });
 });
