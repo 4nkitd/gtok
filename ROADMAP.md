@@ -27,12 +27,12 @@ Each milestone stops for Boss review before the next one starts.
 
 ## Milestone 2: vertical feed
 
-- [ ] Full-screen snap-scrolling feed with infinite loading
-- [ ] Repo card layout with README excerpt and expand sheet
-- [ ] Action rail: save, open on GitHub, share/copy link
-- [ ] Time window chips and language picker
-- [ ] Keyboard: j/k or arrows to move, s to save, o to open
-- [ ] Loading, empty, offline and rate-limited states
+- [x] Full-screen snap-scrolling feed with infinite loading
+- [x] Repo card layout with README excerpt and expand sheet
+- [x] Action rail: save, open on GitHub, share/copy link
+- [x] Time window chips and language picker
+- [x] Keyboard: j/k or arrows to move, s to save, o to open
+- [x] Loading, empty, offline and rate-limited states
 
 ## Milestone 3: saved, history and polish
 

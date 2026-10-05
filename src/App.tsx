@@ -1,40 +1,109 @@
-import { useEffect, useState } from 'react';
-import { formatCount } from './lib/format';
-import { searchRising } from './lib/github';
-import { loadReadme } from './lib/readme';
-import type { Repo } from './lib/types';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import Feed from './components/Feed';
+import ReadmeSheet from './components/ReadmeSheet';
+import TopBar, { WINDOW_LABELS } from './components/TopBar';
+import { useLibrary } from './hooks/useLibrary';
+import { LANGUAGES } from './lib/languages';
+import type { Repo, TimeWindow } from './lib/types';
 
-// Milestone 1 placeholder: proves the live data path. Replaced by the vertical feed in milestone 2.
+const TOAST_MS = 2400;
+
+interface Filters {
+  window: TimeWindow;
+  language: string;
+}
+
+function readFilters(): Filters {
+  const params = new URLSearchParams(location.search);
+  const since = params.get('since');
+  const lang = params.get('lang') ?? '';
+  return {
+    window: since && since in WINDOW_LABELS ? (since as TimeWindow) : 'week',
+    language: LANGUAGES.includes(lang) ? lang : '',
+  };
+}
+
 export default function App() {
-  const [repos, setRepos] = useState<Repo[]>([]);
-  const [readme, setReadme] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [filters, setFilters] = useState(readFilters);
+  const [sheetRepo, setSheetRepo] = useState<Repo | null>(null);
+  const [toast, setToast] = useState('');
+  const toastTimer = useRef<number | undefined>(undefined);
+  const { savedIds, seenIds, toggleSaved, markSeen } = useLibrary();
 
   useEffect(() => {
-    const controller = new AbortController();
-    searchRising({ window: 'week', language: '', page: 1, signal: controller.signal })
-      .then(async ({ repos: page }) => {
-        setRepos(page);
-        if (page[0]) setReadme(await loadReadme(page[0].fullName));
-      })
-      .catch((err: unknown) => {
-        if (!controller.signal.aborted) setError(err instanceof Error ? err.message : String(err));
-      });
-    return () => controller.abort();
+    const params = new URLSearchParams();
+    if (filters.window !== 'week') params.set('since', filters.window);
+    if (filters.language) params.set('lang', filters.language);
+    const query = params.toString();
+    history.replaceState(null, '', query ? `?${query}` : location.pathname);
+  }, [filters]);
+
+  const showToast = useCallback((message: string) => {
+    setToast(message);
+    clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(''), TOAST_MS);
   }, []);
 
+  const share = useCallback(
+    async (repo: Repo) => {
+      const data = { title: repo.fullName, text: repo.description ?? repo.fullName, url: repo.url };
+      if (navigator.share) {
+        try {
+          await navigator.share(data);
+          return;
+        } catch (error) {
+          if ((error as DOMException).name === 'AbortError') return;
+        }
+      }
+      try {
+        await navigator.clipboard.writeText(repo.url);
+        showToast('Link copied');
+      } catch {
+        showToast('Couldn’t copy the link');
+      }
+    },
+    [showToast],
+  );
+
+  const setWindow = useCallback((window: TimeWindow) => setFilters((current) => ({ ...current, window })), []);
+  const setLanguage = useCallback((language: string) => setFilters((current) => ({ ...current, language })), []);
+  const closeSheet = useCallback(() => setSheetRepo(null), []);
+
   return (
-    <main style={{ fontFamily: 'system-ui', maxWidth: 720, margin: '0 auto', padding: 16 }}>
-      <h1>G.tok</h1>
-      {error && <p role="alert">{error}</p>}
-      <ol>
-        {repos.map((repo) => (
-          <li key={repo.id}>
-            <a href={repo.url}>{repo.fullName}</a> · {formatCount(repo.stars)} stars · {repo.language ?? 'n/a'}
-          </li>
-        ))}
-      </ol>
-      {readme && <article dangerouslySetInnerHTML={{ __html: readme }} />}
-    </main>
+    <div className="app">
+      <TopBar window={filters.window} language={filters.language} onWindowChange={setWindow} onLanguageChange={setLanguage} />
+      <Feed
+        key={`${filters.window}:${filters.language}`}
+        window={filters.window}
+        language={filters.language}
+        seenIds={seenIds}
+        savedIds={savedIds}
+        paused={sheetRepo !== null}
+        onToggleSave={toggleSaved}
+        onShare={share}
+        onReadMore={setSheetRepo}
+        onSeen={markSeen}
+        onWindowChange={setWindow}
+      />
+      <ReadmeSheet repo={sheetRepo} onClose={closeSheet} />
+      <p className="keyboard-hint" aria-hidden="true">
+        <span>
+          <kbd>J</kbd>
+          <kbd>K</kbd> move
+        </span>
+        <span>
+          <kbd>S</kbd> save
+        </span>
+        <span>
+          <kbd>O</kbd> open
+        </span>
+        <span>
+          <kbd>R</kbd> read
+        </span>
+      </p>
+      <div className="toast" role="status" aria-live="polite" data-visible={toast !== ''}>
+        {toast}
+      </div>
+    </div>
   );
 }
