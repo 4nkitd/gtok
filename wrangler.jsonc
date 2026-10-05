@@ -1,0 +1,23 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "gtok",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-10-05",
+  "account_id": "fdaaa4987aa5c619d7c8f156885a3a43",
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [{ "pattern": "gtok.dagar.in", "custom_domain": true }],
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api", "/api/*"]
+  },
+  "d1_databases": [{
+    "binding": "DB",
+    "database_name": "gtok-db",
+    "database_id": "fe1026d1-48ed-4b04-9e78-b4ec123fa173",
+    "migrations_dir": "worker/migrations"
+  }],
+  "triggers": { "crons": ["17 3 * * *"] },
+  "observability": { "enabled": false }
+}
